@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Steam Art Kit</title>
+  <meta name="description" content="Every Steam store and library image from one artwork, in the browser: capsules, headers, hero, logo, screenshots and custom library art. Focus-point cropping, logo overlay, previews at display size, ZIP download. Nothing is uploaded.">
+  <meta name="theme-color" content="#171a21">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/app.css">
+  <script>try { const u = JSON.parse(localStorage.getItem('sak:ui') || '{}'); document.documentElement.dataset.theme = u.theme || 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }</script>
+</head>
+<body>
+  <header class="top">
+    <div class="brand"><span class="mark" aria-hidden="true"></span><h1 data-i18n="app.title">Steam Art Kit</h1></div>
+    <p class="tagline" data-i18n="app.tagline">Every store and library image from one artwork. Nothing leaves your browser.</p>
+    <div class="top-actions">
+      <label class="field"><span data-i18n="settings.lang">Language</span><select id="set-lang" aria-label="Language"><option value="en">English</option><option value="tr">Türkçe</option></select></label>
+      <label class="field"><span data-i18n="settings.theme">Theme</span><select id="set-theme" aria-label="Theme"><option value="dark" data-i18n="theme.dark">Dark</option><option value="light" data-i18n="theme.light">Light</option></select></label>
+      <button class="tb" id="btn-install" hidden data-i18n="btn.install">Install</button>
+    </div>
+  </header>
+
+  <div class="work">
+    <aside class="side"><div class="side-inner">
+      <section class="panel">
+        <h3 data-i18n="src.title">Artwork</h3>
+        <div class="drop" id="drop-art" tabindex="0">
+          <div class="drop-empty" id="art-empty">
+            <p><span data-i18n="src.drop">Drop your key art here, or</span> <button type="button" class="link" id="btn-pick-art" data-i18n="src.pick">choose a file</button></p>
+            <small data-i18n="src.hint">PNG, JPG or WebP. Biggest you have: 4K or larger crops best.</small>
+          </div>
+          <div class="drop-full" id="art-full" hidden>
+            <div class="thumb" id="art-thumb"><canvas id="art-canvas"></canvas><div class="focus" id="focus-dot"></div></div>
+            <div class="row-btns"><span class="mono" id="art-info"></span><button type="button" class="tb" id="btn-replace-art" data-i18n="src.replace">Replace</button></div>
+            <small data-i18n="src.focus">Click the image to set the focus point. Every crop is centred on it.</small>
+          </div>
+        </div>
+        <input type="file" id="file-art" accept="image/png,image/jpeg,image/webp,image/gif,image/bmp,image/avif" hidden>
+      </section>
+
+      <section class="panel">
+        <h3 data-i18n="logo.title">Logo (optional)</h3>
+        <div class="drop small" id="drop-logo" tabindex="0">
+          <div class="drop-empty" id="logo-empty">
+            <p><span data-i18n="logo.drop">Drop a transparent PNG logo, or</span> <button type="button" class="link" id="btn-pick-logo" data-i18n="src.pick">choose a file</button></p>
+            <small data-i18n="logo.hint">Used for the logo assets and can be laid over the capsules.</small>
+          </div>
+          <div class="drop-full" id="logo-full" hidden>
+            <div class="thumb checker"><canvas id="logo-canvas"></canvas></div>
+            <div class="row-btns"><span class="mono" id="logo-info"></span><button type="button" class="tb" id="btn-replace-logo" data-i18n="src.replace">Replace</button></div>
+          </div>
+        </div>
+        <input type="file" id="file-logo" accept="image/png,image/webp,image/svg+xml" hidden>
+        <label class="field"><span data-i18n="logo.heropos">Logo over the hero (preview)</span><select id="opt-heropos"><option value="BottomLeft" data-i18n="hp.BottomLeft">Bottom left</option><option value="UpperCenter" data-i18n="hp.UpperCenter">Top centre</option><option value="CenterCenter" data-i18n="hp.CenterCenter">Centre</option><option value="BottomCenter" data-i18n="hp.BottomCenter">Bottom centre</option></select></label>
+        <label class="opt"><input type="checkbox" id="opt-overlay"><span data-i18n="logo.overlay">Lay the logo over capsules and headers</span></label>
+        <div class="grid2" id="overlay-opts">
+          <div class="field"><span data-i18n="logo.position">Position</span><div class="posgrid" id="pos-grid" role="radiogroup"></div></div>
+          <label class="field"><span data-i18n="logo.size">Size</span><input type="range" id="opt-logo-size" min="10" max="90" value="45"><output id="logo-size-out" class="mono">45%</output></label>
+          <label class="field"><span data-i18n="logo.margin">Margin</span><input type="range" id="opt-logo-margin" min="0" max="20" value="5"><output id="logo-margin-out" class="mono">5%</output></label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h3 data-i18n="opt.title">Output</h3>
+        <label class="field"><span data-i18n="opt.game">Game name</span><input type="text" id="opt-game" value="" data-i18n-ph="opt.game.ph" placeholder="used in file names" spellcheck="false"></label>
+        <label class="field"><span data-i18n="opt.appid">Steam app ID</span><input type="text" id="opt-appid" inputmode="numeric" value="" data-i18n-ph="opt.appid.ph" placeholder="e.g. 620" spellcheck="false"></label>
+        <small class="note" data-i18n="opt.appid.hint">Names custom art the way the client's grid folder expects.</small>
+        <div class="grid2">
+          <label class="field"><span data-i18n="opt.format">Default format</span><select id="opt-format"><option value="png">PNG</option><option value="jpg">JPG</option></select></label>
+          <label class="field"><span data-i18n="opt.bg">JPG background</span><input type="color" id="opt-bg" value="#000000"></label>
+        </div>
+        <label class="field"><span data-i18n="opt.quality">JPG quality</span><input type="range" id="opt-quality" min="50" max="100" value="92"><output id="quality-out" class="mono">92</output></label>
+        <label class="opt"><input type="checkbox" id="opt-actual"><span data-i18n="opt.actual">Preview at the size Steam shows it</span></label>
+        <label class="opt"><input type="checkbox" id="opt-legacy"><span data-i18n="opt.legacy">Also make the pre-2024 sizes</span></label>
+      </section>
+    </div></aside>
+
+    <main class="main" id="main">
+      <div class="empty" id="main-empty"><p data-i18n="export.none">Add an artwork to begin.</p></div>
+      <div id="groups"></div>
+    </main>
+  </div>
+
+  <footer class="bar">
+    <span id="export-count" class="mono"></span>
+    <div class="progress" id="progress" hidden><i></i></div><span class="grow"></span>
+    <button class="tb primary" id="btn-zip" disabled data-i18n="export.zip">Download ZIP</button>
+  </footer>
+  <p class="foot"><span data-i18n="foot.text"></span> <a href="https://github.com/ardakalper/steam-art-kit" data-i18n="foot.source">Source on GitHub</a></p>
+  <div class="toast" id="toast" hidden role="status"></div>
+
+  <template id="tpl-card">
+    <article class="card">
+      <header class="card-head">
+        <label class="opt inc"><input type="checkbox" class="card-include" checked></label>
+        <h4 class="card-title"></h4>
+        <span class="mono card-dims"></span>
+      </header>
+      <p class="card-hint"></p>
+      <div class="card-preview"><canvas class="card-canvas"></canvas><div class="card-safe" hidden></div><span class="card-drag" data-i18n="card.drag">drag to reposition</span></div>
+      <p class="card-warn" hidden></p>
+      <footer class="card-foot">
+        <label class="field row"><span data-i18n="card.zoom">Zoom</span><input type="range" class="card-zoom" min="100" max="400" value="100"><button type="button" class="tb card-reset" data-i18n="card.reset">Reset</button></label>
+        <select class="card-format" aria-label="Format"></select>
+        <span class="mono card-bytes"></span>
+        <button type="button" class="tb card-download" data-i18n="card.download">Download</button>
+      </footer>
+    </article>
+  </template>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
